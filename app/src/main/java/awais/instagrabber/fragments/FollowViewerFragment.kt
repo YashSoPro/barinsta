@@ -142,41 +142,6 @@ class FollowViewerFragment : Fragment(), SwipeRefreshLayout.OnRefreshListener {
 
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
         inflater.inflate(R.menu.follow, menu)
-        val menuSearch = menu.findItem(R.id.action_search)
-        val searchView = menuSearch.actionView as SearchView
-        searchView.queryHint = resources.getString(R.string.action_search)
-        searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
-            override fun onQueryTextSubmit(query: String): Boolean {
-                return false
-            }
-
-            override fun onQueryTextChange(query: String): Boolean {
-                if (query.isEmpty()) {
-                    if (!isCompare && searching) {
-                        viewModel.setQuery(null, isFollowersList)
-                        viewModel.getSearch().removeObservers(viewLifecycleOwner)
-                        viewModel.getList(isFollowersList).observe(viewLifecycleOwner) {
-                            refreshAdapter(it, null, null, null)
-                        }
-                    }
-                    searching = false
-                    return true
-                }
-                searching = true
-                if (isCompare && adapter != null) {
-                    adapter!!.filter.filter(query)
-                    return true
-                }
-                viewModel.getList(isFollowersList).removeObservers(viewLifecycleOwner)
-                binding.swipeRefreshLayout.isRefreshing = true
-                viewModel.setQuery(query, isFollowersList)
-                viewModel.getSearch().observe(viewLifecycleOwner) {
-                    binding.swipeRefreshLayout.isRefreshing = false
-                    refreshAdapter(it, null, null, null)
-                }
-                return true
-            }
-        })
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
