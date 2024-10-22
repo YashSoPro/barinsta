@@ -29,8 +29,8 @@ public final class DirectPendingUsersAdapter extends ListAdapter<DirectPendingUs
         @Override
         public boolean areContentsTheSame(@NonNull final PendingUser oldItem, @NonNull final PendingUser newItem) {
             return Objects.equals(oldItem.user.getUsername(), newItem.user.getUsername()) &&
-                    Objects.equals(oldItem.user.getFullName(), newItem.user.getFullName()) &&
-                    Objects.equals(oldItem.requester, newItem.requester);
+                   Objects.equals(oldItem.user.getFullName(), newItem.user.getFullName()) &&
+                   Objects.equals(oldItem.requester, newItem.requester);
         }
     };
 
@@ -39,7 +39,7 @@ public final class DirectPendingUsersAdapter extends ListAdapter<DirectPendingUs
     public DirectPendingUsersAdapter(final PendingUserCallback callback) {
         super(DIFF_CALLBACK);
         this.callback = callback;
-        setHasStableIds(true);
+        setHasStableIds(true); // Ensures stable IDs for better performance
     }
 
     public void submitPendingRequests(final DirectThreadParticipantRequestsResponse requests) {
@@ -47,12 +47,14 @@ public final class DirectPendingUsersAdapter extends ListAdapter<DirectPendingUs
             submitList(Collections.emptyList());
             return;
         }
-        submitList(parse(requests));
+        submitList(parseRequests(requests));
     }
 
-    private List<PendingUser> parse(final DirectThreadParticipantRequestsResponse requests) {
+    private List<PendingUser> parseRequests(final DirectThreadParticipantRequestsResponse requests) {
         final List<User> users = requests.getUsers();
         final Map<Long, String> requesterUsernames = requests.getRequesterUsernames();
+        
+        // Use stream to create PendingUser list
         return users.stream()
                     .map(user -> new PendingUser(user, requesterUsernames.get(user.getPk())))
                     .collect(Collectors.toList());
@@ -74,14 +76,12 @@ public final class DirectPendingUsersAdapter extends ListAdapter<DirectPendingUs
 
     @Override
     public long getItemId(final int position) {
-        final PendingUser item = getItem(position);
-        return item.user.getPk();
+        return getItem(position).user.getPk();
     }
 
     public static class PendingUser {
         private final User user;
         private final String requester;
-
         private boolean inProgress;
 
         public PendingUser(final User user, final String requester) {
@@ -109,9 +109,7 @@ public final class DirectPendingUsersAdapter extends ListAdapter<DirectPendingUs
 
     public interface PendingUserCallback {
         void onClick(int position, PendingUser pendingUser);
-
         void onApprove(int position, PendingUser pendingUser);
-
         void onDeny(int position, PendingUser pendingUser);
     }
 }
