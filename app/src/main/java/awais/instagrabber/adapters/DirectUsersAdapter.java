@@ -9,8 +9,7 @@ import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.ListAdapter;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.common.collect.ImmutableList;
-
+import java.util.ArrayList;
 import java.util.List;
 
 import awais.instagrabber.R;
@@ -23,17 +22,14 @@ public final class DirectUsersAdapter extends ListAdapter<DirectUsersAdapter.Dir
 
     private static final int VIEW_TYPE_HEADER = 0;
     private static final int VIEW_TYPE_USER = 1;
+
     private static final DiffUtil.ItemCallback<DirectUserOrHeader> DIFF_CALLBACK = new DiffUtil.ItemCallback<DirectUserOrHeader>() {
         @Override
         public boolean areItemsTheSame(@NonNull final DirectUserOrHeader oldItem, @NonNull final DirectUserOrHeader newItem) {
-            final boolean bothHeaders = oldItem.isHeader() && newItem.isHeader();
-            final boolean bothItems = !oldItem.isHeader() && !newItem.isHeader();
-            boolean areSameType = bothHeaders || bothItems;
-            if (!areSameType) return false;
-            if (bothHeaders) {
+            if (oldItem.isHeader() && newItem.isHeader()) {
                 return oldItem.headerTitle == newItem.headerTitle;
             }
-            if (oldItem.user != null && newItem.user != null) {
+            if (!oldItem.isHeader() && !newItem.isHeader() && oldItem.user != null && newItem.user != null) {
                 return oldItem.user.getPk() == newItem.user.getPk();
             }
             return false;
@@ -41,16 +37,12 @@ public final class DirectUsersAdapter extends ListAdapter<DirectUsersAdapter.Dir
 
         @Override
         public boolean areContentsTheSame(@NonNull final DirectUserOrHeader oldItem, @NonNull final DirectUserOrHeader newItem) {
-            final boolean bothHeaders = oldItem.isHeader() && newItem.isHeader();
-            final boolean bothItems = !oldItem.isHeader() && !newItem.isHeader();
-            boolean areSameType = bothHeaders || bothItems;
-            if (!areSameType) return false;
-            if (bothHeaders) {
+            if (oldItem.isHeader() && newItem.isHeader()) {
                 return oldItem.headerTitle == newItem.headerTitle;
             }
-            if (oldItem.user != null && newItem.user != null) {
+            if (!oldItem.isHeader() && !newItem.isHeader() && oldItem.user != null && newItem.user != null) {
                 return oldItem.user.getUsername().equals(newItem.user.getUsername()) &&
-                        oldItem.user.getFullName().equals(newItem.user.getFullName());
+                       oldItem.user.getFullName().equals(newItem.user.getFullName());
             }
             return false;
         }
@@ -59,7 +51,7 @@ public final class DirectUsersAdapter extends ListAdapter<DirectUsersAdapter.Dir
     private final long inviterId;
     private final OnDirectUserClickListener onClickListener;
     private final OnDirectUserLongClickListener onLongClickListener;
-    private List<Long> adminUserIds;
+    private List<Long> adminUserIds = new ArrayList<>();
 
     public DirectUsersAdapter(final long inviterId,
                               final OnDirectUserClickListener onClickListener,
@@ -78,68 +70,70 @@ public final class DirectUsersAdapter extends ListAdapter<DirectUsersAdapter.Dir
     }
 
     private List<DirectUserOrHeader> combineLists(final List<User> users, final List<User> leftUsers) {
-        final ImmutableList.Builder<DirectUserOrHeader> listBuilder = ImmutableList.builder();
+        List<DirectUserOrHeader> userOrHeaders = new ArrayList<>();
         if (users != null && !users.isEmpty()) {
-            listBuilder.add(new DirectUserOrHeader(R.string.members));
-            users.stream()
-                 .map(DirectUserOrHeader::new)
-                 .forEach(listBuilder::add);
+            userOrHeaders.add(new DirectUserOrHeader(R.string.members));
+            for (User user : users) {
+                userOrHeaders.add(new DirectUserOrHeader(user));
+            }
         }
         if (leftUsers != null && !leftUsers.isEmpty()) {
-            listBuilder.add(new DirectUserOrHeader(R.string.dms_left_users));
-            leftUsers.stream()
-                     .map(DirectUserOrHeader::new)
-                     .forEach(listBuilder::add);
+            userOrHeaders.add(new DirectUserOrHeader(R.string.dms_left_users));
+            for (User user : leftUsers) {
+                userOrHeaders.add(new DirectUserOrHeader(user));
+            }
         }
-        return listBuilder.build();
+        return userOrHeaders;
     }
 
     @NonNull
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(@NonNull final ViewGroup parent, final int viewType) {
         final LayoutInflater layoutInflater = LayoutInflater.from(parent.getContext());
-        switch (viewType) {
-            case VIEW_TYPE_USER:
-                final LayoutDmUserItemBinding binding = LayoutDmUserItemBinding.inflate(layoutInflater, parent, false);
-                return new DirectUserViewHolder(binding, onClickListener, onLongClickListener);
-            case VIEW_TYPE_HEADER:
-            default:
-                final ItemFavSectionHeaderBinding headerBinding = ItemFavSectionHeaderBinding.inflate(layoutInflater, parent, false);
-                return new HeaderViewHolder(headerBinding);
+        if (viewType == VIEW_TYPE_USER) {
+            final LayoutDmUserItemBinding binding = LayoutDmUserItemBinding.inflate(layoutInflater, parent, false);
+            return new DirectUserViewHolder(binding, onClickListener, onLongClickListener);
+        } else {
+            final ItemFavSectionHeaderBinding headerBinding = ItemFavSectionHeaderBinding.inflate(layoutInflater, parent, false);
+            return new HeaderViewHolder(headerBinding);
         }
     }
 
     @Override
     public void onBindViewHolder(@NonNull final RecyclerView.ViewHolder holder, final int position) {
         if (holder instanceof HeaderViewHolder) {
-            ((HeaderViewHolder) holder).bind(getItem(position).headerTitle);
-            return;
+            bindHeader((HeaderViewHolder) holder, position);
+        } else if (holder instanceof DirectUserViewHolder) {
+            bindUser((DirectUserViewHolder) holder, position);
         }
-        if (holder instanceof DirectUserViewHolder) {
-            final User user = getItem(position).user;
-            ((DirectUserViewHolder) holder).bind(position,
-                                                 user,
-                                                 user != null && adminUserIds != null && adminUserIds.contains(user.getPk()),
-                                                 user != null && user.getPk() == inviterId,
-                                                 false,
-                                                 false);
-        }
+    }
+
+    private void bindHeader(HeaderViewHolder holder, int position) {
+        holder.bind(getItem(position).headerTitle);
+    }
+
+    private void bindUser(DirectUserViewHolder holder, int position) {
+        final User user = getItem(position).user;
+        holder.bind(position,
+                    user,
+                    user != null && adminUserIds.contains(user.getPk()),
+                    user != null && user.getPk() == inviterId,
+                    false,
+                    false);
     }
 
     @Override
     public int getItemViewType(final int position) {
-        final DirectUserOrHeader item = getItem(position);
-        return item.isHeader() ? VIEW_TYPE_HEADER : VIEW_TYPE_USER;
+        return getItem(position).isHeader() ? VIEW_TYPE_HEADER : VIEW_TYPE_USER;
     }
 
     @Override
     public long getItemId(final int position) {
-        final DirectUserOrHeader item = getItem(position);
-        return item.isHeader() ? item.headerTitle : item.user.getPk();
+        return getItem(position).isHeader() ? getItem(position).headerTitle : getItem(position).user.getPk();
     }
 
     public void setAdminUserIds(final List<Long> adminUserIds) {
-        this.adminUserIds = adminUserIds;
+        this.adminUserIds = adminUserIds != null ? adminUserIds : new ArrayList<>();
         notifyDataSetChanged();
     }
 
@@ -169,7 +163,7 @@ public final class DirectUsersAdapter extends ListAdapter<DirectUsersAdapter.Dir
         }
 
         public void bind(@StringRes final int headerTitle) {
-            binding.getRoot().setText(headerTitle);
+            binding.textViewHeader.setText(headerTitle); // Assume you have a TextView for the header
         }
     }
 
