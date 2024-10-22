@@ -1,4 +1,4 @@
-package awais.instagrabber.adapters;
+\package awais.instagrabber.adapters;
 
 import android.content.Context;
 import android.view.LayoutInflater;
@@ -35,10 +35,8 @@ public final class FeedAdapterV2 extends ListAdapter<Media, RecyclerView.ViewHol
     private final SelectionModeCallback selectionModeCallback;
     private final Set<Integer> selectedPositions = new HashSet<>();
     private final Set<Media> selectedFeedModels = new HashSet<>();
-
     private PostsLayoutPreferences layoutPreferences;
     private boolean selectionModeActive = false;
-
 
     private static final DiffUtil.ItemCallback<Media> DIFF_CALLBACK = new DiffUtil.ItemCallback<Media>() {
         @Override
@@ -55,10 +53,10 @@ public final class FeedAdapterV2 extends ListAdapter<Media, RecyclerView.ViewHol
         }
 
         private String getCaptionText(final Caption caption) {
-            if (caption == null) return null;
-            return caption.getText();
+            return caption != null ? caption.getText() : null;
         }
     };
+
     private final AdapterSelectionCallback adapterSelectionCallback = new AdapterSelectionCallback() {
         @Override
         public boolean onPostLongClick(final int position, final Media feedModel) {
@@ -69,18 +67,20 @@ public final class FeedAdapterV2 extends ListAdapter<Media, RecyclerView.ViewHol
                     selectionModeCallback.onSelectionStart();
                 }
             }
-            selectedPositions.add(position);
-            selectedFeedModels.add(feedModel);
-            notifyItemChanged(position);
-            if (selectionModeCallback != null) {
-                selectionModeCallback.onSelectionChange(selectedFeedModels);
-            }
+            toggleSelection(position, feedModel);
             return true;
         }
 
         @Override
         public void onPostClick(final int position, final Media feedModel) {
             if (!selectionModeActive) return;
+            toggleSelection(position, feedModel);
+            if (selectedPositions.isEmpty()) {
+                endSelectionMode();
+            }
+        }
+
+        private void toggleSelection(int position, Media feedModel) {
             if (selectedPositions.contains(position)) {
                 selectedPositions.remove(position);
                 selectedFeedModels.remove(feedModel);
@@ -92,12 +92,13 @@ public final class FeedAdapterV2 extends ListAdapter<Media, RecyclerView.ViewHol
             if (selectionModeCallback != null) {
                 selectionModeCallback.onSelectionChange(selectedFeedModels);
             }
-            if (selectedPositions.isEmpty()) {
-                selectionModeActive = false;
-                notifyDataSetChanged();
-                if (selectionModeCallback != null) {
-                    selectionModeCallback.onSelectionEnd();
-                }
+        }
+
+        private void endSelectionMode() {
+            selectionModeActive = false;
+            notifyDataSetChanged();
+            if (selectionModeCallback != null) {
+                selectionModeCallback.onSelectionEnd();
             }
         }
     };
@@ -132,19 +133,16 @@ public final class FeedAdapterV2 extends ListAdapter<Media, RecyclerView.ViewHol
                                                         final LayoutInflater layoutInflater,
                                                         final int viewType) {
         switch (MediaItemType.valueOf(viewType)) {
-            case MEDIA_TYPE_VIDEO: {
-                final ItemFeedVideoBinding binding = ItemFeedVideoBinding.inflate(layoutInflater, parent, false);
-                return new FeedVideoViewHolder(binding, feedItemCallback);
-            }
-            case MEDIA_TYPE_SLIDER: {
-                final ItemFeedSliderBinding binding = ItemFeedSliderBinding.inflate(layoutInflater, parent, false);
-                return new FeedSliderViewHolder(binding, feedItemCallback);
-            }
+            case MEDIA_TYPE_VIDEO:
+                final ItemFeedVideoBinding videoBinding = ItemFeedVideoBinding.inflate(layoutInflater, parent, false);
+                return new FeedVideoViewHolder(videoBinding, feedItemCallback);
+            case MEDIA_TYPE_SLIDER:
+                final ItemFeedSliderBinding sliderBinding = ItemFeedSliderBinding.inflate(layoutInflater, parent, false);
+                return new FeedSliderViewHolder(sliderBinding, feedItemCallback);
             case MEDIA_TYPE_IMAGE:
-            default: {
-                final ItemFeedPhotoBinding binding = ItemFeedPhotoBinding.inflate(layoutInflater, parent, false);
-                return new FeedPhotoViewHolder(binding, feedItemCallback);
-            }
+            default:
+                final ItemFeedPhotoBinding photoBinding = ItemFeedPhotoBinding.inflate(layoutInflater, parent, false);
+                return new FeedPhotoViewHolder(photoBinding, feedItemCallback);
         }
     }
 
@@ -152,20 +150,17 @@ public final class FeedAdapterV2 extends ListAdapter<Media, RecyclerView.ViewHol
     public void onBindViewHolder(@NonNull final RecyclerView.ViewHolder viewHolder, final int position) {
         final Media feedModel = getItem(position);
         if (feedModel == null) return;
-        switch (layoutPreferences.getType()) {
-            case LINEAR:
-                ((FeedItemViewHolder) viewHolder).bind(feedModel);
-                break;
-            case GRID:
-            case STAGGERED_GRID:
-            default:
-                ((FeedGridItemViewHolder) viewHolder).bind(position,
-                                                           feedModel,
-                                                           layoutPreferences,
-                                                           feedItemCallback,
-                                                           adapterSelectionCallback,
-                                                           selectionModeActive,
-                                                           selectedPositions.contains(position));
+
+        if (layoutPreferences.getType() == PostsLayoutPreferences.Type.LINEAR) {
+            ((FeedItemViewHolder) viewHolder).bind(feedModel);
+        } else {
+            ((FeedGridItemViewHolder) viewHolder).bind(position,
+                                                       feedModel,
+                                                       layoutPreferences,
+                                                       feedItemCallback,
+                                                       adapterSelectionCallback,
+                                                       selectionModeActive,
+                                                       selectedPositions.contains(position));
         }
     }
 
@@ -189,59 +184,28 @@ public final class FeedAdapterV2 extends ListAdapter<Media, RecyclerView.ViewHol
         }
     }
 
-    // @Override
-    // public void onViewAttachedToWindow(@NonNull final FeedItemViewHolder holder) {
-    //     super.onViewAttachedToWindow(holder);
-    //     // Log.d(TAG, "attached holder: " + holder);
-    //     if (!(holder instanceof FeedSliderViewHolder)) return;
-    //     final FeedSliderViewHolder feedSliderViewHolder = (FeedSliderViewHolder) holder;
-    //     feedSliderViewHolder.startPlayingVideo();
-    // }
-    //
-    // @Override
-    // public void onViewDetachedFromWindow(@NonNull final FeedItemViewHolder holder) {
-    //     super.onViewDetachedFromWindow(holder);
-    //     // Log.d(TAG, "detached holder: " + holder);
-    //     if (!(holder instanceof FeedSliderViewHolder)) return;
-    //     final FeedSliderViewHolder feedSliderViewHolder = (FeedSliderViewHolder) holder;
-    //     feedSliderViewHolder.stopPlayingVideo();
-    // }
-
     public interface FeedItemCallback {
         void onPostClick(final Media feedModel);
-
         void onProfilePicClick(final Media feedModel);
-
         void onNameClick(final Media feedModel);
-
         void onLocationClick(final Media feedModel);
-
         void onMentionClick(final String mention);
-
         void onHashtagClick(final String hashtag);
-
         void onCommentsClick(final Media feedModel);
-
         void onDownloadClick(final Media feedModel, final int childPosition, final View popupLocation);
-
         void onEmailClick(final String emailId);
-
         void onURLClick(final String url);
-
         void onSliderClick(Media feedModel, int position);
     }
 
     public interface AdapterSelectionCallback {
         boolean onPostLongClick(final int position, Media feedModel);
-
         void onPostClick(final int position, Media feedModel);
     }
 
     public interface SelectionModeCallback {
         void onSelectionStart();
-
         void onSelectionChange(final Set<Media> selectedFeedModels);
-
         void onSelectionEnd();
     }
 }
