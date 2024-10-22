@@ -8,7 +8,9 @@ import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.ListAdapter;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import awais.instagrabber.adapters.viewholder.directmessages.DirectReactionViewHolder;
 import awais.instagrabber.databinding.LayoutDmUserItemBinding;
@@ -30,7 +32,7 @@ public final class DirectReactionsAdapter extends ListAdapter<DirectItemEmojiRea
     };
 
     private final long viewerId;
-    private final List<User> users;
+    private final Map<Long, User> userMap; // Use a Map for quicker access
     private final String itemId;
     private final OnReactionClickListener onReactionClickListener;
 
@@ -40,9 +42,9 @@ public final class DirectReactionsAdapter extends ListAdapter<DirectItemEmojiRea
                                   final OnReactionClickListener onReactionClickListener) {
         super(DIFF_CALLBACK);
         this.viewerId = viewerId;
-        this.users = users;
         this.itemId = itemId;
         this.onReactionClickListener = onReactionClickListener;
+        this.userMap = createUserMap(users); // Initialize userMap
         setHasStableIds(true);
     }
 
@@ -52,14 +54,12 @@ public final class DirectReactionsAdapter extends ListAdapter<DirectItemEmojiRea
         final LayoutInflater layoutInflater = LayoutInflater.from(parent.getContext());
         final LayoutDmUserItemBinding binding = LayoutDmUserItemBinding.inflate(layoutInflater, parent, false);
         return new DirectReactionViewHolder(binding, viewerId, itemId, onReactionClickListener);
-
     }
 
     @Override
     public void onBindViewHolder(@NonNull final DirectReactionViewHolder holder, final int position) {
         final DirectItemEmojiReaction reaction = getItem(position);
-        if (reaction == null) return;
-        holder.bind(reaction, getUser(reaction.getSenderId()));
+        holder.bind(reaction, getUser(reaction.getSenderId())); // Handle binding
     }
 
     @Override
@@ -69,10 +69,21 @@ public final class DirectReactionsAdapter extends ListAdapter<DirectItemEmojiRea
 
     @Nullable
     private User getUser(final long pk) {
-        return users.stream()
-                    .filter(user -> user.getPk() == pk)
-                    .findFirst()
-                    .orElse(null);
+        return userMap.get(pk); // Lookup user from Map
+    }
+
+    /**
+     * Creates a mapping of user IDs to User objects for efficient access.
+     *
+     * @param users List of User objects to be mapped
+     * @return Map of user IDs to User objects
+     */
+    private Map<Long, User> createUserMap(final List<User> users) {
+        Map<Long, User> userMap = new HashMap<>();
+        for (User user : users) {
+            userMap.put(user.getPk(), user);
+        }
+        return userMap;
     }
 
     public interface OnReactionClickListener {
