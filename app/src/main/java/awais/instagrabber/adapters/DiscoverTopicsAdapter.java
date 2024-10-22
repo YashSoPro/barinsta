@@ -29,11 +29,11 @@ public class DiscoverTopicsAdapter extends ListAdapter<TopicCluster, TopicCluste
         }
     };
 
-    private final OnTopicClickListener onTopicClickListener;
+    private final OnTopicClickListener topicClickListener;
 
-    public DiscoverTopicsAdapter(final OnTopicClickListener onTopicClickListener) {
+    public DiscoverTopicsAdapter(final OnTopicClickListener topicClickListener) {
         super(DIFF_CALLBACK);
-        this.onTopicClickListener = onTopicClickListener;
+        this.topicClickListener = topicClickListener;
     }
 
     @NonNull
@@ -41,7 +41,7 @@ public class DiscoverTopicsAdapter extends ListAdapter<TopicCluster, TopicCluste
     public TopicClusterViewHolder onCreateViewHolder(@NonNull final ViewGroup parent, final int viewType) {
         final LayoutInflater layoutInflater = LayoutInflater.from(parent.getContext());
         final ItemDiscoverTopicBinding binding = ItemDiscoverTopicBinding.inflate(layoutInflater, parent, false);
-        return new TopicClusterViewHolder(binding, onTopicClickListener, null);
+        return new TopicClusterViewHolder(binding, topicClickListener, null);
     }
 
     @Override
