@@ -5,14 +5,16 @@ import androidx.appcompat.app.AppCompatActivity
 import awais.instagrabber.utils.LocaleUtils
 import awais.instagrabber.utils.ThemeUtils
 
-abstract class BaseLanguageActivity protected constructor() : AppCompatActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        ThemeUtils.changeTheme(this)
-        super.onCreate(savedInstanceState)
-    }
+abstract class BaseLanguageActivity : AppCompatActivity() {
 
-    init {
-        @Suppress("LeakingThis")
+    override fun onCreate(savedInstanceState: Bundle?) {
+        // Update the locale configuration
         LocaleUtils.updateConfig(this)
+        
+        // Change the theme before calling super
+        ThemeUtils.changeTheme(this)
+        
+        // Call the superclass method
+        super.onCreate(savedInstanceState)
     }
 }
