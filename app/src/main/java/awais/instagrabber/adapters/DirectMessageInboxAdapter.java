@@ -26,22 +26,26 @@ public final class DirectMessageInboxAdapter extends ListAdapter<DirectThread, D
         }
 
         @Override
-        public boolean areContentsTheSame(@NonNull final DirectThread oldThread,
-                                          @NonNull final DirectThread newThread) {
-            final boolean titleEqual = oldThread.getThreadTitle().equals(newThread.getThreadTitle());
-            if (!titleEqual) return false;
-            final boolean lastSeenAtEqual = Objects.equals(oldThread.getLastSeenAt(), newThread.getLastSeenAt());
-            if (!lastSeenAtEqual) return false;
-            final List<DirectItem> oldItems = oldThread.getItems();
-            final List<DirectItem> newItems = newThread.getItems();
+        public boolean areContentsTheSame(@NonNull final DirectThread oldThread, @NonNull final DirectThread newThread) {
+            return isContentEqual(oldThread, newThread);
+        }
+        
+        private boolean isContentEqual(DirectThread oldThread, DirectThread newThread) {
+            if (!oldThread.getThreadTitle().equals(newThread.getThreadTitle())) return false;
+            if (!Objects.equals(oldThread.getLastSeenAt(), newThread.getLastSeenAt())) return false;
+            return areDirectItemsEqual(oldThread.getItems(), newThread.getItems());
+        }
+
+        private boolean areDirectItemsEqual(List<DirectItem> oldItems, List<DirectItem> newItems) {
             if (oldItems == null || newItems == null) return false;
             if (oldItems.size() != newItems.size()) return false;
-            final DirectItem oldItemFirst = oldThread.getFirstDirectItem();
-            final DirectItem newItemFirst = newThread.getFirstDirectItem();
+
+            DirectItem oldItemFirst = oldItems.isEmpty() ? null : oldItems.get(0);
+            DirectItem newItemFirst = newItems.isEmpty() ? null : newItems.get(0);
             if (oldItemFirst == null || newItemFirst == null) return false;
-            final boolean idsEqual = oldItemFirst.getItemId().equals(newItemFirst.getItemId());
-            if (!idsEqual) return false;
-            return oldItemFirst.getTimestamp() == newItemFirst.getTimestamp();
+            
+            return oldItemFirst.getItemId().equals(newItemFirst.getItemId()) &&
+                   oldItemFirst.getTimestamp() == newItemFirst.getTimestamp();
         }
     };
 
