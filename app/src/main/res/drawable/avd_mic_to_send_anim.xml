@@ -15,7 +15,7 @@
                 <path
                     android:name="path"
                     android:pathData="M 12 15 C 13.66 15 14.99 13.66 14.99 12 L 15 6 C 15 4.34 13.66 3 12 3 C 10.34 3 9 4.34 9 6 L 9 12 C 9 13.66 10.34 15 12 15 Z M 10.8 5.9 C 10.8 5.24 11.34 4.7 12 4.7 C 12.66 4.7 13.2 5.24 13.2 5.9 L 13.19 12.1 C 13.19 12.76 12.66 13.3 12 13.3 C 11.34 13.3 10.8 12.76 10.8 12.1 L 10.8 5.9 Z M 17.3 12 C 17.3 15 14.76 17.1 12 17.1 C 9.24 17.1 6.7 15 6.7 12 L 5 12 C 5 15.41 7.72 18.23 11 18.72 L 11 22 L 13 22 L 13 18.72 C 16.28 18.24 19 15.42 19 12 L 17.3 12 Z"
-                    android:fillColor="#000000"
+                    android:fillColor="#FF0000" <!-- Example dynamic color -->
                     android:strokeAlpha="0"/>
             </group>
             <group
@@ -34,6 +34,8 @@
             </group>
         </vector>
     </aapt:attr>
+
+    <!-- Animation for Mic Icon -->
     <target android:name="mic">
         <aapt:attr name="android:animation">
             <set>
@@ -51,9 +53,19 @@
                     android:valueTo="0.5"
                     android:valueType="floatType"
                     android:interpolator="@android:anim/accelerate_decelerate_interpolator"/>
+                <!-- Optional: Add rotation effect -->
+                <objectAnimator
+                    android:propertyName="rotation"
+                    android:duration="100"
+                    android:valueFrom="0"
+                    android:valueTo="10"
+                    android:valueType="floatType"
+                    android:interpolator="@android:anim/accelerate_decelerate_interpolator"/>
             </set>
         </aapt:attr>
     </target>
+
+    <!-- Animation for Send Icon -->
     <target android:name="send">
         <aapt:attr name="android:animation">
             <set>
@@ -73,9 +85,20 @@
                     android:valueTo="1"
                     android:valueType="floatType"
                     android:interpolator="@android:anim/accelerate_decelerate_interpolator"/>
+                <!-- Optional: Add translation for dynamic effect -->
+                <objectAnimator
+                    android:propertyName="translationY"
+                    android:startOffset="90"
+                    android:duration="110"
+                    android:valueFrom="0"
+                    android:valueTo="-4"
+                    android:valueType="floatType"
+                    android:interpolator="@android:anim/accelerate_decelerate_interpolator"/>
             </set>
         </aapt:attr>
     </target>
+
+    <!-- Animation for Path -->
     <target android:name="path">
         <aapt:attr name="android:animation">
             <objectAnimator
@@ -88,6 +111,8 @@
                 android:interpolator="@android:anim/linear_interpolator"/>
         </aapt:attr>
     </target>
+
+    <!-- Animation for Path 1 -->
     <target android:name="path_1">
         <aapt:attr name="android:animation">
             <objectAnimator
