@@ -23,39 +23,48 @@ import java.io.StringWriter
 
 class DirectorySelectActivity : BaseLanguageActivity() {
     private var initialUri: Uri? = null
-
     private lateinit var binding: ActivityDirectorySelectBinding
-
     private val viewModel: DirectorySelectActivityViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityDirectorySelectBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        // Set the initial URI from the intent
         val intent = intent
         viewModel.setInitialUri(intent)
         setupObservers()
+        
         binding.selectDir.setOnClickListener { openDirectoryChooser() }
         initialUri = intent.getParcelableExtra(Constants.EXTRA_INITIAL_URI)
     }
 
     private fun setupObservers() {
-        viewModel.message.observe(this, { message: String? -> binding.message.text = message })
-        viewModel.prevUri.observe(this, { prevUri: String? ->
+        // Observe messages and update UI
+        viewModel.message.observe(this) { message -> 
+            binding.message.text = message 
+        }
+        
+        viewModel.prevUri.observe(this) { prevUri -> 
             if (prevUri == null) {
                 binding.prevUri.visibility = View.GONE
                 binding.message2.visibility = View.GONE
-                return@observe
+            } else {
+                binding.prevUri.text = prevUri
+                binding.prevUri.visibility = View.VISIBLE
+                binding.message2.visibility = View.VISIBLE
             }
-            binding.prevUri.text = prevUri
-            binding.prevUri.visibility = View.VISIBLE
-            binding.message2.visibility = View.VISIBLE
-        })
-        viewModel.dirSuccess.observe(this, { success: Boolean -> binding.selectDir.visibility = if (success) View.GONE else View.VISIBLE })
-        viewModel.loading.observe(this, { loading: Boolean ->
+        }
+
+        viewModel.dirSuccess.observe(this) { success -> 
+            binding.selectDir.visibility = if (success) View.GONE else View.VISIBLE 
+        }
+
+        viewModel.loading.observe(this) { loading -> 
             binding.message.visibility = if (loading) View.GONE else View.VISIBLE
-            binding.loadingIndicator.visibility = if (loading) View.VISIBLE else View.GONE
-        })
+            binding.loadingIndicator.visibility = if (loading) View.VISIBLE else View.GONE 
+        }
     }
 
     private fun openDirectoryChooser() {
@@ -90,27 +99,26 @@ class DirectorySelectActivity : BaseLanguageActivity() {
             showErrorDialog(getString(R.string.dir_select_no_download_folder, authority))
             return
         }
-        mainThread.execute({
+
+        mainThread.execute {
             try {
                 viewModel.setupSelectedDir(data)
-                val intent = Intent(this, MainActivity::class.java)
-                startActivity(intent)
+                startActivity(Intent(this, MainActivity::class.java))
                 finish()
             } catch (e: Exception) {
-                // Should not come to this point.
-                // If it does, we have to show this error to the user so that they can report it.
-                try {
-                    StringWriter().use { sw ->
-                        PrintWriter(sw).use { pw ->
-                            e.printStackTrace(pw)
-                            showErrorDialog("Please report this error to the developers:\n\n$sw")
-                        }
-                    }
-                } catch (ioException: IOException) {
-                    Log.e(TAG, "onActivityResult: ", ioException)
-                }
+                handleError(e)
             }
-        }, 500)
+        }
+    }
+
+    private fun handleError(e: Exception) {
+        val errorMessage = StringWriter().use { sw ->
+            PrintWriter(sw).use { pw ->
+                e.printStackTrace(pw)
+                "Please report this error to the developers:\n\n$sw"
+            }
+        }
+        showErrorDialog(errorMessage)
     }
 
     private fun showErrorDialog(message: String) {
