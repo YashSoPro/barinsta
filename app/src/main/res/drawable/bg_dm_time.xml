@@ -1,3 +1,4 @@
+
 <?xml version="1.0" encoding="utf-8"?>
 <shape xmlns:android="http://schemas.android.com/apk/res/android">
     <gradient
@@ -5,9 +6,34 @@
         android:endColor="@color/grey_900"
         android:startColor="#00FFFFFF"
         android:type="linear" />
+    
     <corners
         android:bottomLeftRadius="@dimen/dm_message_card_radius_small"
         android:bottomRightRadius="@dimen/dm_message_card_radius_small"
         android:topLeftRadius="0dp"
         android:topRightRadius="0dp" />
+    
+    <padding
+        android:left="8dp"
+        android:top="8dp"
+        android:right="8dp"
+        android:bottom="8dp" />
+    
+    <solid android:color="@android:color/transparent"/> <!-- Optional: Make the background transparent if needed -->
+    
+    <stroke
+        android:width="1dp"
+        android:color="@color/grey_600"/> <!-- Stroke to outline the shape -->
+
+    <!-- Optional shadow effect -->
+    <item android:top="2dp" android:left="2dp" android:right="0dp" android:bottom="0dp">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/grey_800" />
+            <corners
+                android:bottomLeftRadius="@dimen/dm_message_card_radius_small"
+                android:bottomRightRadius="@dimen/dm_message_card_radius_small"
+                android:topLeftRadius="0dp"
+                android:topRightRadius="0dp" />
+        </shape>
+    </item>
 </shape>
