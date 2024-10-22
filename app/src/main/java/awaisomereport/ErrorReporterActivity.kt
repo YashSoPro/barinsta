@@ -1,4 +1,4 @@
-package awaisomereport
+lpackage awaisomereport
 
 import android.app.Activity
 import android.content.Context
@@ -29,7 +29,14 @@ class ErrorReporterActivity : Activity(), View.OnClickListener {
         setContentView(binding.root)
         setFinishOnTouchOutside(false)
         window.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-        val crashTitle = SpannableString("   " + getString(R.string.crash_title))
+
+        setupCrashTitle()
+        binding.btnReport.setOnClickListener(this)
+        binding.btnCancel.setOnClickListener(this)
+    }
+
+    private fun setupCrashTitle() {
+        val crashTitle = SpannableString("   ${getString(R.string.crash_title)}")
         crashTitle.setSpan(
             CenteredImageSpan(this, android.R.drawable.stat_notify_error),
             0,
@@ -37,20 +44,21 @@ class ErrorReporterActivity : Activity(), View.OnClickListener {
             Spannable.SPAN_INCLUSIVE_EXCLUSIVE
         )
         title = crashTitle
-        binding.btnReport.setOnClickListener(this)
-        binding.btnCancel.setOnClickListener(this)
     }
 
     override fun onClick(v: View) {
-        if (v === binding.btnReport) {
-            startCrashEmailIntent(this)
+        when (v) {
+            binding.btnReport -> {
+                startCrashEmailIntent(this)
+            }
+            binding.btnCancel -> {
+                finish()
+            }
         }
-        finish()
         exitProcess(10)
     }
 
     private class CenteredImageSpan(context: Context, @DrawableRes drawableRes: Int) : ImageSpan(context, drawableRes) {
-
         private var drawable: WeakReference<Drawable>? = null
 
         override fun getSize(
@@ -61,13 +69,13 @@ class ErrorReporterActivity : Activity(), View.OnClickListener {
             fm: FontMetricsInt?
         ): Int {
             fm?.apply {
-                val pfm = paint.fontMetricsInt
-                ascent = pfm.ascent
-                descent = pfm.descent
-                top = pfm.top
-                bottom = pfm.bottom
+                val fontMetrics = paint.fontMetricsInt
+                ascent = fontMetrics.ascent
+                descent = fontMetrics.descent
+                top = fontMetrics.top
+                bottom = fontMetrics.bottom
             }
-            return cachedDrawable.bounds.right
+            return cachedDrawable.bounds.width() // Use width instead of right for better accuracy
         }
 
         override fun draw(
