@@ -3,7 +3,18 @@
     android:height="24dp"
     android:viewportWidth="640"
     android:viewportHeight="640">
+    
     <path
-        android:fillColor="?colorPrimary"
+        android:fillColor="@android:color/transparent" <!-- Setting base color to transparent -->
         android:pathData="M640,490L490,640L640,640L640,490Z" />
+
+    <path
+        android:fillColor="@color/colorPrimary" <!-- Primary color for the shape -->
+        android:pathData="M640,490L490,640L640,640L640,490Z" />
+
+    <path
+        android:strokeColor="@color/grey_800" <!-- Stroke color -->
+        android:strokeWidth="2" <!-- Stroke width -->
+        android:pathData="M640,490L490,640L640,640L640,490Z" 
+        android:fillColor="@android:color/transparent" /> <!-- Transparent fill for outline -->
 </vector>
