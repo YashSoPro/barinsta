@@ -1,6 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:drawable="@drawable/ic_outline_star_plus_24" android:state_checked="false" />
-    <item android:drawable="@drawable/ic_star_check_24" android:state_checked="true" />
-    <item android:drawable="@drawable/ic_outline_star_plus_24" />
+
+    <!-- Unchecked state -->
+    <item
+        android:state_checked="false"
+        android:drawable="@drawable/ic_outline_star_plus_24" />
+
+    <!-- Checked state -->
+    <item
+        android:state_checked="true"
+        android:drawable="@drawable/ic_star_check_24" />
+
+    <!-- Default state -->
+    <item
+        android:drawable="@drawable/ic_outline_star_plus_24" />
+
 </selector>
