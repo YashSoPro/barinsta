@@ -1,3 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ripple xmlns:android="http://schemas.android.com/apk/res/android"
-    android:color="@color/grey_500" />
+    android:color="@color/grey_500">
+    <!-- Optional: Add a custom shape if needed -->
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@android:color/transparent" />
+            <corners android:radius="4dp" /> <!-- Optional corner radius -->
+        </shape>
+    </item>
+</ripple>
