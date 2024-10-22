@@ -56,7 +56,8 @@ class Login : BaseLanguageActivity(), View.OnClickListener {
 
     override fun onClick(v: View) {
         if (v === loginBinding.refresh) {
-            loginBinding.webView.loadUrl("https://instagram.com/")
+            // Change the URL to instagram.com/login
+            loginBinding.webView.loadUrl("https://instagram.com/login")
             return
         }
         if (v === loginBinding.cookies) {
@@ -99,7 +100,8 @@ class Login : BaseLanguageActivity(), View.OnClickListener {
             cookieSyncMngr.stopSync()
             cookieSyncMngr.sync()
         }
-        loginBinding.webView.loadUrl("https://instagram.com/")
+        // Load the login page initially
+        loginBinding.webView.loadUrl("https://instagram.com/login")
     }
 
     override fun onPause() {
