@@ -32,40 +32,65 @@ class CameraActivity : BaseLanguageActivity() {
     private var imageCapture: ImageCapture? = null
     private var displayId = -1
     private var cameraProvider: ProcessCameraProvider? = null
-    private var lensFacing = 0
+    private var lensFacing = CameraSelector.LENS_FACING_BACK // Default to back camera
 
     private val cameraRequestCode = 100
     private val simpleDateFormat = SimpleDateFormat("yyyy-MM-dd-HH-mm-ss-SSS", Locale.US)
+
     private val displayListener: DisplayListener = object : DisplayListener {
         override fun onDisplayAdded(displayId: Int) {}
         override fun onDisplayRemoved(displayId: Int) {}
         override fun onDisplayChanged(displayId: Int) {
             if (displayId == this@CameraActivity.displayId) {
-                imageCapture?.targetRotation = binding.root.display.rotation
+                imageCapture?.targetRotation = binding.viewFinder.display.rotation
             }
         }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding = ActivityCameraBinding.inflate(LayoutInflater.from(baseContext))
+        binding = ActivityCameraBinding.inflate(LayoutInflater.from(this))
         setContentView(binding.root)
+
         Utils.transparentStatusBar(this, true, false)
+        initializeCameraComponents()
+        setupUI()
+    }
+
+    private fun initializeCameraComponents() {
         displayManager = getSystemService(DISPLAY_SERVICE) as DisplayManager
         outputDirectory = DownloadUtils.cameraDir
         cameraExecutor = Executors.newSingleThreadExecutor()
         displayManager.registerDisplayListener(displayListener, null)
+
         binding.viewFinder.post {
             displayId = binding.viewFinder.display.displayId
-            updateUi()
             checkPermissionsAndSetupCamera()
         }
     }
 
+    private fun setupUI() {
+        binding.cameraCaptureButton.setOnClickListener { takePhoto() }
+        binding.switchCamera.setOnClickListener { toggleCamera() }
+        binding.close.setOnClickListener { finishWithCancel() }
+    }
+
+    private fun finishWithCancel() {
+        setResult(RESULT_CANCELED)
+        finish()
+    }
+
+    private fun toggleCamera() {
+        lensFacing = if (lensFacing == CameraSelector.LENS_FACING_FRONT) 
+            CameraSelector.LENS_FACING_BACK 
+        else 
+            CameraSelector.LENS_FACING_FRONT
+        
+        bindCameraUseCases()
+    }
+
     override fun onResume() {
         super.onResume()
-        // Make sure that all permissions are still present, since the
-        // user could have removed them while the app was in paused state.
         if (!PermissionUtils.hasCameraPerms(this)) {
             PermissionUtils.requestCameraPerms(this, cameraRequestCode)
         }
@@ -73,10 +98,7 @@ class CameraActivity : BaseLanguageActivity() {
 
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
-        // Redraw the camera UI controls
         updateUi()
-
-        // Enable or disable switching between cameras
         updateCameraSwitchButton()
     }
 
@@ -87,36 +109,18 @@ class CameraActivity : BaseLanguageActivity() {
         displayManager.unregisterDisplayListener(displayListener)
     }
 
-    private fun updateUi() {
-        binding.cameraCaptureButton.setOnClickListener { takePhoto() }
-        // Disable the button until the camera is set up
-        binding.switchCamera.isEnabled = false
-        // Listener for button used to switch cameras. Only called if the button is enabled
-        binding.switchCamera.setOnClickListener {
-            lensFacing = if (CameraSelector.LENS_FACING_FRONT == lensFacing) CameraSelector.LENS_FACING_BACK else CameraSelector.LENS_FACING_FRONT
-            // Re-bind use cases to update selected camera
-            bindCameraUseCases()
-        }
-        binding.close.setOnClickListener {
-            setResult(RESULT_CANCELED)
-            finish()
-        }
-    }
-
     private fun checkPermissionsAndSetupCamera() {
         if (PermissionUtils.hasCameraPerms(this)) {
             setupCamera()
-            return
+        } else {
+            PermissionUtils.requestCameraPerms(this, cameraRequestCode)
         }
-        PermissionUtils.requestCameraPerms(this, cameraRequestCode)
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == cameraRequestCode) {
-            if (PermissionUtils.hasCameraPerms(this)) {
-                setupCamera()
-            }
+        if (requestCode == cameraRequestCode && PermissionUtils.hasCameraPerms(this)) {
+            setupCamera()
         }
     }
 
@@ -125,116 +129,90 @@ class CameraActivity : BaseLanguageActivity() {
         cameraProviderFuture.addListener({
             try {
                 cameraProvider = cameraProviderFuture.get()
-                // Select lensFacing depending on the available cameras
-                lensFacing = -1
-                if (hasBackCamera()) {
-                    lensFacing = CameraSelector.LENS_FACING_BACK
-                } else if (hasFrontCamera()) {
-                    lensFacing = CameraSelector.LENS_FACING_FRONT
-                }
-                check(lensFacing != -1) { "Back and front camera are unavailable" }
-                // Enable or disable switching between cameras
+                setupLensFacing()
                 updateCameraSwitchButton()
-                // Build and bind the camera use cases
                 bindCameraUseCases()
-            } catch (e: ExecutionException) {
-                Log.e(TAG, "setupCamera: ", e)
-            } catch (e: InterruptedException) {
-                Log.e(TAG, "setupCamera: ", e)
-            } catch (e: CameraInfoUnavailableException) {
+            } catch (e: Exception) {
                 Log.e(TAG, "setupCamera: ", e)
             }
         }, ContextCompat.getMainExecutor(this))
     }
 
+    private fun setupLensFacing() {
+        lensFacing = when {
+            hasBackCamera() -> CameraSelector.LENS_FACING_BACK
+            hasFrontCamera() -> CameraSelector.LENS_FACING_FRONT
+            else -> -1
+        }
+        check(lensFacing != -1) { "No available camera found" }
+    }
+
     private fun bindCameraUseCases() {
         val rotation = binding.viewFinder.display.rotation
+        val cameraSelector = CameraSelector.Builder().requireLensFacing(lensFacing).build()
 
-        // CameraSelector
-        val cameraSelector = CameraSelector.Builder()
-            .requireLensFacing(lensFacing)
-            .build()
-
-        // Preview
-        val preview = Preview.Builder() // Set initial target rotation
-            .setTargetRotation(rotation)
-            .build()
-
-        // ImageCapture
+        val preview = Preview.Builder().setTargetRotation(rotation).build()
         imageCapture = ImageCapture.Builder()
-            .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY) // Set initial target rotation, we will have to call this again if rotation changes
-            // during the lifecycle of this use case
+            .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
             .setTargetRotation(rotation)
             .build()
+
         cameraProvider?.unbindAll()
         cameraProvider?.bindToLifecycle(this, cameraSelector, preview, imageCapture)
         preview.setSurfaceProvider(binding.viewFinder.surfaceProvider)
     }
 
     private fun takePhoto() {
-        if (imageCapture == null) return
-        val fileName = simpleDateFormat.format(System.currentTimeMillis()) + ".jpg"
-        val mimeType = "image/jpg"
-        val photoFile = outputDirectory?.createFile(mimeType, fileName)?.let { it } ?: return
-        val outputStream = contentResolver.openOutputStream(photoFile.uri)?.let { it } ?: return
-        val outputFileOptions = ImageCapture.OutputFileOptions.Builder(outputStream).build()
-        imageCapture?.takePicture(
-            outputFileOptions,
-            cameraExecutor,
-            object : ImageCapture.OnImageSavedCallback {
-                @Suppress("UnstableApiUsage")
-                override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
-                    try { outputStream.close() } catch (ignored: IOException) {}
-                    val intent = Intent()
-                    intent.data = photoFile.uri
-                    setResult(RESULT_OK, intent)
-                    finish()
-                    Log.d(TAG, "onImageSaved: " + photoFile.uri)
-                }
+        imageCapture?.let {
+            val fileName = "${simpleDateFormat.format(System.currentTimeMillis())}.jpg"
+            val mimeType = "image/jpg"
+            val photoFile = outputDirectory?.createFile(mimeType, fileName) ?: return
+            
+            val outputStream = contentResolver.openOutputStream(photoFile.uri) ?: return
+            val outputFileOptions = ImageCapture.OutputFileOptions.Builder(outputStream).build()
 
-                override fun onError(exception: ImageCaptureException) {
-                    Log.e(TAG, "onError: ", exception)
-                    try { outputStream.close() } catch (ignored: IOException) {}
-                }
-            }
-        )
-        // We can only change the foreground Drawable using API level 23+ API
-        // if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-        //     // Display flash animation to indicate that photo was captured
-        //     final ConstraintLayout container = binding.getRoot();
-        //     container.postDelayed(() -> {
-        //         container.setForeground(new ColorDrawable(Color.WHITE));
-        //         container.postDelayed(() -> container.setForeground(null), 50);
-        //     }, 100);
-        // }
-    }
+            it.takePicture(
+                outputFileOptions,
+                cameraExecutor,
+                object : ImageCapture.OnImageSavedCallback {
+                    override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
+                        handleImageSaved(photoFile, outputStream)
+                    }
 
-    /**
-     * Enabled or disabled a button to switch cameras depending on the available cameras
-     */
-    private fun updateCameraSwitchButton() {
-        try {
-            binding.switchCamera.isEnabled = hasBackCamera() && hasFrontCamera()
-        } catch (e: CameraInfoUnavailableException) {
-            binding.switchCamera.isEnabled = false
+                    override fun onError(exception: ImageCaptureException) {
+                        Log.e(TAG, "onError: ", exception)
+                        closeStream(outputStream)
+                    }
+                }
+            )
         }
     }
 
-    /**
-     * Returns true if the device has an available back camera. False otherwise
-     */
-    @Throws(CameraInfoUnavailableException::class)
-    private fun hasBackCamera(): Boolean {
-        return if (cameraProvider == null) false else cameraProvider?.hasCamera(CameraSelector.DEFAULT_BACK_CAMERA) ?: false
+    private fun handleImageSaved(photoFile: DocumentFile, outputStream: OutputStream) {
+        closeStream(outputStream)
+        val intent = Intent().apply {
+            data = photoFile.uri
+        }
+        setResult(RESULT_OK, intent)
+        finish()
+        Log.d(TAG, "Image saved: ${photoFile.uri}")
     }
 
-    /**
-     * Returns true if the device has an available front camera. False otherwise
-     */
-    @Throws(CameraInfoUnavailableException::class)
+    private fun closeStream(outputStream: OutputStream) {
+        try {
+            outputStream.close()
+        } catch (ignored: IOException) {}
+    }
+
+    private fun updateCameraSwitchButton() {
+        binding.switchCamera.isEnabled = hasBackCamera() && hasFrontCamera()
+    }
+
+    private fun hasBackCamera(): Boolean {
+        return cameraProvider?.hasCamera(CameraSelector.DEFAULT_BACK_CAMERA) ?: false
+    }
+
     private fun hasFrontCamera(): Boolean {
-        return if (cameraProvider == null) {
-            false
-        } else cameraProvider?.hasCamera(CameraSelector.DEFAULT_FRONT_CAMERA) ?: false
+        return cameraProvider?.hasCamera(CameraSelector.DEFAULT_FRONT_CAMERA) ?: false
     }
 }
