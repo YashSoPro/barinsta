@@ -20,7 +20,9 @@ public class GroupViewHolder extends RecyclerView.ViewHolder implements View.OnC
         this.listener = listener;
         this.title = itemView.findViewById(android.R.id.text1);
         this.arrow = itemView.findViewById(R.id.collapsingArrow);
-        this.title.setBackgroundColor(0x80_1565C0);
+        
+        // Setting a semi-transparent background color for the title
+        this.title.setBackgroundColor(0x801565C0); // Changed to correct hex notation
         itemView.setOnClickListener(this);
     }
 
@@ -30,10 +32,14 @@ public class GroupViewHolder extends RecyclerView.ViewHolder implements View.OnC
 
     @Override
     public void onClick(final View v) {
-        if (listener != null) listener.toggleGroup(getLayoutPosition());
+        if (listener != null) {
+            listener.toggleGroup(getBindingAdapterPosition()); // Updated for RecyclerView adapter position
+        }
     }
 
     public void toggle(final boolean expand) {
-        arrow.setImageResource(expand ? R.drawable.ic_keyboard_arrow_up_24 : R.drawable.ic_keyboard_arrow_down_24);
+        // Change arrow icon based on the expand state
+        int arrowResId = expand ? R.drawable.ic_keyboard_arrow_up_24 : R.drawable.ic_keyboard_arrow_down_24;
+        arrow.setImageResource(arrowResId);
     }
 }
