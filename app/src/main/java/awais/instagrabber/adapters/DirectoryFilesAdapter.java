@@ -14,7 +14,7 @@ import awais.instagrabber.R;
 import awais.instagrabber.databinding.ItemDirListBinding;
 
 public final class DirectoryFilesAdapter extends ListAdapter<File, DirectoryFilesAdapter.ViewHolder> {
-    private final OnFileClickListener onFileClickListener;
+    private final OnFileClickListener fileClickListener;
 
     private static final DiffUtil.ItemCallback<File> DIFF_CALLBACK = new DiffUtil.ItemCallback<File>() {
         @Override
@@ -28,9 +28,9 @@ public final class DirectoryFilesAdapter extends ListAdapter<File, DirectoryFile
         }
     };
 
-    public DirectoryFilesAdapter(final OnFileClickListener onFileClickListener) {
+    public DirectoryFilesAdapter(final OnFileClickListener fileClickListener) {
         super(DIFF_CALLBACK);
-        this.onFileClickListener = onFileClickListener;
+        this.fileClickListener = fileClickListener;
     }
 
     @NonNull
@@ -44,7 +44,7 @@ public final class DirectoryFilesAdapter extends ListAdapter<File, DirectoryFile
     @Override
     public void onBindViewHolder(@NonNull final ViewHolder holder, final int position) {
         final File file = getItem(position);
-        holder.bind(file, onFileClickListener);
+        holder.bind(file, fileClickListener);
     }
 
     public interface OnFileClickListener {
@@ -59,17 +59,17 @@ public final class DirectoryFilesAdapter extends ListAdapter<File, DirectoryFile
             this.binding = binding;
         }
 
-        public void bind(final File file, final OnFileClickListener onFileClickListener) {
+        public void bind(final File file, final OnFileClickListener fileClickListener) {
             if (file == null) return;
-            if (onFileClickListener != null) {
-                itemView.setOnClickListener(v -> onFileClickListener.onFileClick(file));
-            }
+
+            itemView.setOnClickListener(v -> {
+                if (fileClickListener != null) {
+                    fileClickListener.onFileClick(file);
+                }
+            });
+
             binding.text.setText(file.getName());
-            if (file.isDirectory()) {
-                binding.icon.setImageResource(R.drawable.ic_folder_24);
-                return;
-            }
-            binding.icon.setImageResource(R.drawable.ic_file_24);
+            binding.icon.setImageResource(file.isDirectory() ? R.drawable.ic_folder_24 : R.drawable.ic_file_24);
         }
     }
 }
