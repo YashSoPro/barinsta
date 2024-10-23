@@ -94,9 +94,7 @@
 
     <array name="logged_in_nav_root_ids">
         <item>@id/direct_messages_nav_graph</item>
-        <item>@id/feed_nav_graph</item>
         <item>@id/profile_nav_graph</item>
-        <item>@id/discover_nav_graph</item>
         <item>@id/more_nav_graph</item>
         <item>@id/favorites_nav_graph</item>
         <item>@id/notification_viewer_nav_graph</item>

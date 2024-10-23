@@ -1,3 +1,7 @@
+# Stripped Features
+
+Got rid of the discover and search functionalities, to be left with a basic messenger app for Instagram.
+
 ### THERE ARE CURRENTLY NO OFFICIAL GOOGLE PLAY RELEASES. PLEASE REPORT ANY OCCURRENCES TO US.
 
 <img src="./app/src/main/ic_launcher-round.png" alt="Barinsta logo" align="right" width="20%"/>

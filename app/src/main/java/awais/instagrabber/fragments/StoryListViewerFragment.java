@@ -169,24 +169,6 @@ public final class StoryListViewerFragment extends Fragment implements SwipeRefr
     @Override
     public void onCreateOptionsMenu(@NonNull final Menu menu, final MenuInflater inflater) {
         inflater.inflate(R.menu.search, menu);
-        final MenuItem menuSearch = menu.findItem(R.id.action_search);
-        final SearchView searchView = (SearchView) menuSearch.getActionView();
-        searchView.setQueryHint(getResources().getString(R.string.action_search));
-        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
-
-            @Override
-            public boolean onQueryTextSubmit(final String query) {
-                return false;
-            }
-
-            @Override
-            public boolean onQueryTextChange(final String query) {
-                if (adapter != null) {
-                    adapter.getFilter().filter(query);
-                }
-                return true;
-            }
-        });
     }
 
     @Override
