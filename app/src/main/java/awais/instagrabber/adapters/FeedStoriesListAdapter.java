@@ -4,15 +4,13 @@ import android.view.LayoutInflater;
 import android.view.ViewGroup;
 import android.widget.Filter;
 import android.widget.Filterable;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.ListAdapter;
-
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-
 import awais.instagrabber.adapters.viewholder.StoryListViewHolder;
 import awais.instagrabber.databinding.ItemNotificationBinding;
 import awais.instagrabber.repositories.responses.stories.Story;
@@ -21,30 +19,30 @@ import awais.instagrabber.utils.TextUtils;
 public final class FeedStoriesListAdapter extends ListAdapter<Story, StoryListViewHolder> implements Filterable {
     private final OnFeedStoryClickListener listener;
     private List<Story> list;
+    private List<Story> allStories = new ArrayList<>(); // To store the unfiltered list
 
     private final Filter filter = new Filter() {
         @NonNull
         @Override
         protected FilterResults performFiltering(final CharSequence filter) {
             final String query = TextUtils.isEmpty(filter) ? null : filter.toString().toLowerCase();
-            List<Story> filteredList = list;
-            if (list != null && query != null) {
-                filteredList = list.stream()
-                                   .filter(feedStoryModel -> feedStoryModel.getUser()
-                                                                           .getUsername()
-                                                                           .toLowerCase()
-                                                                           .contains(query))
-                                   .collect(Collectors.toList());
+            List<Story> filteredList = allStories;
+            if (allStories != null && query != null) {
+                filteredList = allStories.stream()
+                                         .filter(story -> story.getUser()
+                                                               .getUsername()
+                                                               .toLowerCase()
+                                                               .contains(query))
+                                         .collect(Collectors.toList());
             }
             final FilterResults filterResults = new FilterResults();
-            filterResults.count = filteredList != null ? filteredList.size() : 0;
+            filterResults.count = filteredList.size();
             filterResults.values = filteredList;
             return filterResults;
         }
 
         @Override
         protected void publishResults(final CharSequence constraint, final FilterResults results) {
-            //noinspection unchecked
             submitList((List<Story>) results.values, true);
         }
     };
@@ -73,6 +71,7 @@ public final class FeedStoriesListAdapter extends ListAdapter<Story, StoryListVi
 
     private void submitList(@Nullable final List<Story> list, final boolean isFiltered) {
         if (!isFiltered) {
+            allStories = list != null ? new ArrayList<>(list) : new ArrayList<>(); // Store the unfiltered list
             this.list = list;
         }
         super.submitList(list);
