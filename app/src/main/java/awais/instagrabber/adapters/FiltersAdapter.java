@@ -3,14 +3,12 @@ package awais.instagrabber.adapters;
 import android.graphics.Bitmap;
 import android.view.LayoutInflater;
 import android.view.ViewGroup;
-
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.ListAdapter;
-
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-
 import awais.instagrabber.adapters.viewholder.FilterViewHolder;
 import awais.instagrabber.databinding.ItemFilterBinding;
 import awais.instagrabber.fragments.imageedit.filters.filters.Filter;
@@ -26,13 +24,13 @@ public class FiltersAdapter extends ListAdapter<Filter<?>, FilterViewHolder> {
 
         @Override
         public boolean areContentsTheSame(@NonNull final Filter<?> oldItem, @NonNull final Filter<?> newItem) {
-            return oldItem.getType().equals(newItem.getType());
+            return oldItem.equals(newItem); // Extending comparison criteria
         }
     };
 
     private final Bitmap bitmap;
     private final OnFilterClickListener onFilterClickListener;
-    private final Collection<GPUImageFilter> filters;
+    private final List<GPUImageFilter> filters;
     private final String originalKey;
     private int selectedPosition = 0;
 
@@ -41,7 +39,8 @@ public class FiltersAdapter extends ListAdapter<Filter<?>, FilterViewHolder> {
                           final Bitmap bitmap,
                           final OnFilterClickListener onFilterClickListener) {
         super(DIFF_CALLBACK);
-        this.filters = filters;
+        this.filters = new ArrayList<>(filters); // Convert to List for indexing
+        this.filters.add(0, new GPUImageFilter()); // Add default "Original" filter at the start
         this.originalKey = originalKey;
         this.bitmap = bitmap;
         this.onFilterClickListener = onFilterClickListener;
@@ -58,7 +57,11 @@ public class FiltersAdapter extends ListAdapter<Filter<?>, FilterViewHolder> {
 
     @Override
     public void onBindViewHolder(@NonNull final FilterViewHolder holder, final int position) {
-        holder.bind(position, originalKey, bitmap, getItem(position), selectedPosition == position);
+        boolean isSelected = selectedPosition == position;
+        holder.bind(position, originalKey, bitmap, getItem(position), isSelected);
+
+        // Visual feedback for selection (optional)
+        holder.itemView.setAlpha(isSelected ? 1f : 0.7f);
     }
 
     @Override
@@ -67,10 +70,10 @@ public class FiltersAdapter extends ListAdapter<Filter<?>, FilterViewHolder> {
     }
 
     public void setSelected(final int position) {
-        final int prev = this.selectedPosition;
+        final int prevSelected = this.selectedPosition;
         this.selectedPosition = position;
         notifyItemChanged(position);
-        notifyItemChanged(prev);
+        notifyItemChanged(prevSelected);
     }
 
     public void setSelectedFilter(final GPUImageFilter instance) {
